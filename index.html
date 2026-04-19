@@ -1,1 +1,310 @@
-<!DOCTYPE html> <html lang="hr"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Klara & Bruno 💍</title> <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400&display=swap" rel="stylesheet"> <style> body{ margin:0; font-family:Poppins; background:linear-gradient(#fffaf5,#f3e5d8); color:#5a4636; text-align:center; } /* LOGIN */ #login{ position:fixed; top:0; left:0; width:100%; height:100%; background:url("hero.jpg") center/cover; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; z-index:999; } input{ padding:12px; border-radius:25px; border:none; margin:10px; } button{ padding:12px 25px; border:none; border-radius:30px; background:linear-gradient(45deg,#c6a46c,#e8c88a); color:white; cursor:pointer; margin:10px; } /* HERO */ .hero{ background:url("hero1.jpg") center/cover; height:50vh; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; } /* GALLERY */ .gallery{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; padding:15px; } .gallery img,.gallery video{ width:100%; border-radius:12px; cursor:pointer; } /* HEARTS */ .heart{ position:fixed; bottom:-20px; color:white; animation:floatUp linear infinite; } @keyframes floatUp{ from{transform:translateY(0)} to{transform:translateY(-120vh)} } </style> </head> <body> <div id="login"> <h1>Klara & Bruno 💍</h1> <p>Dobrodošli na naš dan 💛</p> <input type="password" id="pass" placeholder="Lozinka"> <button onclick="enter()">Uđi</button> </div> <div class="hero"> <h1>Klara & Bruno</h1> <p>Hvala što ste dio našeg najljepšeg dana 💛</p> </div> <div> <input type="text" id="username" placeholder="Vaše ime"> <br> <button onclick="upload()">📸 Dodaj slike/video</button> <button onclick="downloadAll()">📦 Preuzmi sve</button> </div> <input type="file" id="file" multiple accept="image/*,video/*" hidden> <div class="gallery" id="gallery"></div> <audio id="music" loop> <source src="paulyudin-wedding-485932.mp3"> </audio> <!-- FIREBASE --> <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script> <script> const firebaseConfig = { apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI", authDomain: "trenutakviseqr-9d521.firebaseapp.com", projectId: "trenutakviseqr-9d521", storageBucket: "trenutakviseqr-9d521.firebasestorage.app", appId: "1:578545655511:web:4ee1996961004f783eda92" }; firebase.initializeApp(firebaseConfig); const db = firebase.firestore(); const storage = firebase.storage(); /* LOGIN */ function enter(){ if(pass.value==="svadba2026"){ login.style.display="none"; music.play(); loadGallery(); startHearts(); } } /* UPLOAD */ function upload(){ file.click(); } file.addEventListener("change", async e=>{ let files = [...e.target.files]; let name = username.value || "Gost"; for(let f of files){ if(f.size > 15*1024*1024){ alert("Max 15MB po datoteci"); continue; } let ref = storage.ref("wedding/"+Date.now()+"_"+f.name); await ref.put(f); let url = await ref.getDownloadURL(); await db.collection("photos").add({ url:url, name:name, type:f.type, created:Date.now() }); } }); /* LOAD */ function loadGallery(){ db.collection("photos") .orderBy("created","desc") .onSnapshot(snap=>{ gallery.innerHTML=""; snap.forEach(doc=>{ let d=doc.data(); let el; if(d.type.startsWith("video")){ el=document.createElement("video"); el.src=d.url; el.controls=true; }else{ el=document.createElement("img"); el.src=d.url; } el.loading="lazy"; let down=document.createElement("a"); down.href=d.url; down.download="file"; down.innerText="⬇️"; let wrap=document.createElement("div"); wrap.appendChild(el); wrap.appendChild(down); gallery.appendChild(wrap); }); }); } /* DOWNLOAD ALL */ async function downloadAll(){ let snap = await db.collection("photos").get(); snap.forEach(doc=>{ window.open(doc.data().url); }); } /* HEARTS */ function startHearts(){ setInterval(()=>{ let h=document.createElement("div"); h.className="heart"; h.innerText="❤"; h.style.left=Math.random()*100+"vw"; h.style.animationDuration=(5+Math.random()*5)+"s"; document.body.appendChild(h); setTimeout(()=>h.remove(),8000); },500); } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klara & Bruno 💍</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Poppins;
+  background:linear-gradient(#fffaf5,#f3e5d8);
+  color:#5a4636;
+  text-align:center;
+}
+
+/* LOGIN */
+#login{
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:url("hero.jpg") center/cover;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  z-index:999;
+}
+
+/* HERO */
+.hero{
+  background:url("hero1.jpg") center/cover;
+  height:50vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+}
+
+/* TEXT */
+.thankyou{
+  padding:20px;
+  font-size:15px;
+  max-width:500px;
+  margin:auto;
+}
+
+/* INPUTS */
+input{
+  padding:12px;
+  border-radius:25px;
+  border:none;
+  margin:10px;
+}
+
+button{
+  padding:12px 25px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(45deg,#c6a46c,#e8c88a);
+  color:white;
+  cursor:pointer;
+  margin:10px;
+}
+
+/* GALLERY */
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+  gap:10px;
+  padding:15px;
+}
+
+.gallery img,.gallery video{
+  width:100%;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+/* LIGHTBOX */
+#lightbox{
+  display:none;
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.9);
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+
+#lightbox img{
+  max-width:90%;
+  max-height:80%;
+}
+
+.nav{
+  position:absolute;
+  top:50%;
+  font-size:40px;
+  color:white;
+  cursor:pointer;
+}
+
+.left{ left:20px; }
+.right{ right:20px; }
+
+.close{
+  position:absolute;
+  top:20px;
+  right:20px;
+  font-size:30px;
+  color:white;
+  cursor:pointer;
+}
+
+/* HEARTS */
+.heart{
+  position:fixed;
+  bottom:-20px;
+  color:white;
+  animation:floatUp linear infinite;
+}
+
+@keyframes floatUp{
+  from{transform:translateY(0)}
+  to{transform:translateY(-120vh)}
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <h1>Klara & Bruno 💍</h1>
+  <p>Dobrodošli na naš najljepši dan 💛</p>
+  <input type="password" id="pass" placeholder="Lozinka">
+  <button onclick="enter()">Uđi</button>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Klara & Bruno</h1>
+  <p>Hvala što ste dio našeg najljepšeg dana 💛</p>
+</div>
+
+<div class="thankyou">
+  Hvala vam od srca što ste s nama podijelili ove posebne trenutke.  
+  Ovdje možete dodati svoje fotografije i zajedno stvoriti uspomene koje ćemo zauvijek čuvati 💛
+</div>
+
+<div>
+  <input type="text" id="username" placeholder="Vaše ime">
+  <br>
+  <button onclick="upload()">📸 Dodaj slike (max 10)</button>
+  <button onclick="downloadAll()">📦 Preuzmi sve</button>
+</div>
+
+<input type="file" id="file" multiple accept="image/*,video/*" hidden>
+
+<div class="gallery" id="gallery"></div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <span class="close" onclick="closeLightbox()">✖</span>
+  <span class="nav left" onclick="prevImage()">⬅</span>
+  <img id="lightbox-img">
+  <span class="nav right" onclick="nextImage()">➡</span>
+</div>
+
+<audio id="music" loop>
+  <source src="paulyudin-wedding-485932.mp3">
+</audio>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
+  authDomain: "trenutakviseqr-9d521.firebaseapp.com",
+  projectId: "trenutakviseqr-9d521",
+  storageBucket: "trenutakviseqr-9d521.appspot.com",
+  appId: "1:578545655511:web:4ee1996961004f783eda92"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+let galleryData = [];
+let current = 0;
+
+/* LOGIN */
+function enter(){
+  if(pass.value==="svadba2026"){
+    login.style.display="none";
+    music.play();
+    loadGallery();
+    startHearts();
+  }
+}
+
+/* UPLOAD */
+function upload(){ file.click(); }
+
+file.addEventListener("change", async e=>{
+  let files = [...e.target.files].slice(0,10); // max 10
+  let name = username.value || "Gost";
+
+  for(let f of files){
+    let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
+    await ref.put(f);
+    let url = await ref.getDownloadURL();
+
+    await db.collection("photos").add({
+      url, name, type:f.type, created:Date.now()
+    });
+  }
+});
+
+/* LOAD */
+function loadGallery(){
+  db.collection("photos")
+    .orderBy("created","desc")
+    .onSnapshot(snap=>{
+
+      gallery.innerHTML="";
+      galleryData=[];
+
+      snap.forEach(doc=>{
+        let d = doc.data();
+        let index = galleryData.length;
+        galleryData.push(d);
+
+        let el;
+
+        if(d.type.startsWith("video")){
+          el=document.createElement("video");
+          el.src=d.url;
+          el.controls=true;
+        }else{
+          el=document.createElement("img");
+          el.src=d.url;
+          el.onclick=()=>openLightbox(index);
+        }
+
+        el.loading="lazy";
+        gallery.appendChild(el);
+      });
+
+    });
+}
+
+/* LIGHTBOX */
+function openLightbox(i){
+  current=i;
+  lightbox.style.display="flex";
+  show();
+}
+
+function closeLightbox(){
+  lightbox.style.display="none";
+}
+
+function show(){
+  document.getElementById("lightbox-img").src = galleryData[current].url;
+}
+
+function nextImage(){
+  current=(current+1)%galleryData.length;
+  show();
+}
+
+function prevImage(){
+  current=(current-1+galleryData.length)%galleryData.length;
+  show();
+}
+
+/* DOWNLOAD ALL */
+async function downloadAll(){
+  let snap = await db.collection("photos").get();
+  snap.forEach(doc=>{
+    window.open(doc.data().url);
+  });
+}
+
+/* HEARTS */
+function startHearts(){
+  setInterval(()=>{
+    let h=document.createElement("div");
+    h.className="heart";
+    h.innerText="❤";
+    h.style.left=Math.random()*100+"vw";
+    h.style.animationDuration=(5+Math.random()*5)+"s";
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),8000);
+  },500);
+}
+</script>
+
+</body>
+</html>
