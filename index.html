@@ -3,122 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Klara & Bruno 💍</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
 
 <style>
 body{
-margin:0;
-font-family:Poppins;
-background:linear-gradient(#fffaf5,#f3e5d8);
-color:#5a4636;
-text-align:center;
+  margin:0;
+  font-family:Poppins;
+  background:linear-gradient(#fffaf5,#f3e5d8);
+  text-align:center;
 }
 
 /* LOGIN */
 #login{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:url("hero.jpg") center/cover;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-color:white;
-z-index:999;
-}
-
-input{
-padding:12px;
-border-radius:25px;
-border:none;
-margin:10px;
-}
-
-button{
-padding:12px 25px;
-border:none;
-border-radius:30px;
-background:linear-gradient(45deg,#c6a46c,#e8c88a);
-color:white;
-cursor:pointer;
-margin:10px;
+  position:fixed;
+  width:100%; height:100%;
+  background:url("hero.jpg") center/cover;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  color:white; z-index:999;
 }
 
 /* HERO */
 .hero{
-background:url("hero1.jpg") center/cover;
-height:50vh;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-color:white;
+  background:url("hero1.jpg") center/cover;
+  height:50vh;
+  display:flex; justify-content:center; align-items:center;
+  color:white;
 }
 
 /* GALLERY */
 .gallery{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-gap:10px;
-padding:15px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
+  padding:15px;
 }
-
 .gallery img,.gallery video{
-width:100%;
-border-radius:12px;
-cursor:pointer;
+  width:100%;
+  border-radius:12px;
 }
 
-/* HEARTS */
-.heart{
-position:fixed;
-bottom:-20px;
-color:white;
-animation:floatUp linear infinite;
+/* VIEWER */
+#viewer{
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.95);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+#viewer img,#viewer video{
+  max-width:90%;
+  max-height:85%;
+  border-radius:10px;
+  animation:zoom .3s;
+}
+@keyframes zoom{
+  from{transform:scale(.8)} to{transform:scale(1)}
 }
 
-@keyframes floatUp{
-from{transform:translateY(0)}
-to{transform:translateY(-120vh)}
+button{
+  padding:12px 25px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(45deg,#c6a46c,#e8c88a);
+  color:white;
+  margin:10px;
 }
-
+input{
+  padding:12px;
+  border-radius:25px;
+  border:none;
+  margin:10px;
+}
 </style>
 </head>
 
 <body>
 
 <div id="login">
-<h1>Klara & Bruno 💍</h1>
-<p>Dobrodošli na naš dan 💛</p>
-<input type="password" id="pass" placeholder="Lozinka">
-<button onclick="enter()">Uđi</button>
+  <h1>Klara & Bruno 💍</h1>
+  <input type="password" id="pass" placeholder="Lozinka">
+  <button onclick="enter()">Uđi</button>
 </div>
 
 <div class="hero">
-<h1>Klara & Bruno</h1>
-<p>Hvala što ste dio našeg najljepšeg dana 💛</p>
+  <h1>Klara & Bruno</h1>
 </div>
 
 <div>
-<input type="text" id="username" placeholder="Vaše ime">
-<br>
-<button onclick="upload()">📸 Dodaj slike/video</button>
-<button onclick="downloadAll()">📦 Preuzmi sve</button>
+  <input type="text" id="username" placeholder="Vaše ime">
+  <br>
+  <button onclick="upload()">📸 Dodaj slike/video</button>
 </div>
 
 <input type="file" id="file" multiple accept="image/*,video/*" hidden>
 
 <div class="gallery" id="gallery"></div>
 
-<audio id="music" loop>
-<source src="paulyudin-wedding-485932.mp3">
-</audio>
+<div id="viewer" onclick="closeViewer()">
+  <img id="viewerImg">
+  <video id="viewerVideo" controls></video>
+</div>
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -127,114 +117,168 @@ to{transform:translateY(-120vh)}
 
 <script>
 const firebaseConfig = {
-apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
-authDomain: "trenutakviseqr-9d521.firebaseapp.com",
-projectId: "trenutakviseqr-9d521",
-storageBucket: "trenutakviseqr-9d521.firebasestorage.app",
-appId: "1:578545655511:web:4ee1996961004f783eda92"
+  apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
+  authDomain: "trenutakviseqr-9d521.firebaseapp.com",
+  projectId: "trenutakviseqr-9d521",
+  storageBucket: "trenutakviseqr-9d521.firebasestorage.app",
+  messagingSenderId: "578545655511",
+  appId: "1:578545655511:web:4ee1996961004f783eda92",
+  measurementId: "G-G6GK1E8JBC"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+let allMedia = [];
+let currentIndex = 0;
+
 /* LOGIN */
 function enter(){
-if(pass.value==="svadba2026"){
-login.style.display="none";
-music.play();
-loadGallery();
-startHearts();
+  if(pass.value==="svadba2026"){
+    login.style.display="none";
+    loadGallery();
+  }
 }
+
+/* RESIZE + WATERMARK */
+function resizeImage(file){
+  return new Promise(resolve=>{
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = e=>{
+      img.onload = ()=>{
+        const canvas = document.createElement("canvas");
+        const max = 1600;
+
+        let w = img.width;
+        let h = img.height;
+
+        if(w > max || h > max){
+          if(w > h){ h *= max/w; w = max; }
+          else{ w *= max/h; h = max; }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img,0,0,w,h);
+
+        ctx.fillStyle="rgba(255,255,255,0.5)";
+        ctx.font="30px serif";
+        ctx.fillText("Klara & Bruno",20,h-30);
+
+        canvas.toBlob(blob=>{
+          resolve(new File([blob], file.name, {type:"image/jpeg"}));
+        }, "image/jpeg", 0.8);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 /* UPLOAD */
 function upload(){
-file.click();
+  file.click();
 }
 
 file.addEventListener("change", async e=>{
-let files = [...e.target.files];
-let name = username.value || "Gost";
+  let files = [...e.target.files];
+  let name = username.value || "Gost";
 
-for(let f of files){
+  for(let f of files){
+    let uploadFile = f;
 
-if(f.size > 15*1024*1024){
-alert("Max 15MB po datoteci");
-continue;
-}
+    if(f.type.startsWith("image")){
+      uploadFile = await resizeImage(f);
+    }
 
-let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
-await ref.put(f);
-let url = await ref.getDownloadURL();
+    let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
+    await ref.put(uploadFile);
 
-await db.collection("photos").add({
-url:url,
-name:name,
-type:f.type,
-created:Date.now()
-});
-}
+    let url = await ref.getDownloadURL();
+
+    await db.collection("photos").add({
+      url, name, type:f.type, created:Date.now()
+    });
+  }
 });
 
 /* LOAD */
 function loadGallery(){
-db.collection("photos")
-.orderBy("created","desc")
-.onSnapshot(snap=>{
-gallery.innerHTML="";
+  db.collection("photos")
+    .orderBy("created","desc")
+    .onSnapshot(snap=>{
+      gallery.innerHTML="";
+      allMedia=[];
 
-snap.forEach(doc=>{
-let d=doc.data();
+      snap.forEach((doc,i)=>{
+        let d = doc.data();
+        allMedia.push(d);
 
-let el;
+        let el = d.type.startsWith("video")
+          ? document.createElement("video")
+          : document.createElement("img");
 
-if(d.type.startsWith("video")){
-el=document.createElement("video");
-el.src=d.url;
-el.controls=true;
-}else{
-el=document.createElement("img");
-el.src=d.url;
+        el.src = d.url;
+
+        el.onclick = e=>{
+          e.stopPropagation();
+          openViewer(i);
+        };
+
+        gallery.appendChild(el);
+      });
+    });
 }
 
-el.loading="lazy";
+/* VIEWER */
+function openViewer(i){
+  currentIndex=i;
+  let d = allMedia[i];
 
-let down=document.createElement("a");
-down.href=d.url;
-down.download="file";
-down.innerText="⬇️";
+  viewer.style.display="flex";
 
-let wrap=document.createElement("div");
-wrap.appendChild(el);
-wrap.appendChild(down);
+  if(d.type.startsWith("video")){
+    viewerImg.style.display="none";
+    viewerVideo.style.display="block";
+    viewerVideo.src=d.url;
+  }else{
+    viewerVideo.style.display="none";
+    viewerImg.style.display="block";
+    viewerImg.src=d.url;
+  }
+}
 
-gallery.appendChild(wrap);
+function closeViewer(){
+  viewer.style.display="none";
+  viewerVideo.pause();
+}
+
+/* SWIPE */
+let startX=0;
+
+viewer.addEventListener("touchstart",e=>{
+  startX = e.touches[0].clientX;
 });
+
+viewer.addEventListener("touchend",e=>{
+  let endX = e.changedTouches[0].clientX;
+  if(startX - endX > 50) next();
+  if(endX - startX > 50) prev();
 });
-}
 
-/* DOWNLOAD ALL */
-async function downloadAll(){
-let snap = await db.collection("photos").get();
-snap.forEach(doc=>{
-window.open(doc.data().url);
-});
+function next(){
+  currentIndex = (currentIndex+1)%allMedia.length;
+  openViewer(currentIndex);
 }
-
-/* HEARTS */
-function startHearts(){
-setInterval(()=>{
-let h=document.createElement("div");
-h.className="heart";
-h.innerText="❤";
-h.style.left=Math.random()*100+"vw";
-h.style.animationDuration=(5+Math.random()*5)+"s";
-document.body.appendChild(h);
-setTimeout(()=>h.remove(),8000);
-},500);
+function prev(){
+  currentIndex = (currentIndex-1+allMedia.length)%allMedia.length;
+  openViewer(currentIndex);
 }
-
 </script>
 
 </body>
