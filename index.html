@@ -6,19 +6,22 @@
 
 <title>Klara & Bruno 💍</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
 
 <style>
 body{
 margin:0;
 font-family:Poppins;
-background:#fdf8f3;
+background:linear-gradient(#fffaf5,#f3e5d8);
 color:#5a4636;
+text-align:center;
 }
 
 /* LOGIN */
 #login{
 position:fixed;
+top:0;
+left:0;
 width:100%;
 height:100%;
 background:url("hero.jpg") center/cover;
@@ -26,8 +29,8 @@ display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
-z-index:999;
 color:white;
+z-index:999;
 }
 
 input{
@@ -43,8 +46,8 @@ border:none;
 border-radius:30px;
 background:linear-gradient(45deg,#c6a46c,#e8c88a);
 color:white;
-margin:10px;
 cursor:pointer;
+margin:10px;
 }
 
 /* HERO */
@@ -61,46 +64,30 @@ color:white;
 /* GALLERY */
 .gallery{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
 gap:10px;
 padding:15px;
 }
 
 .gallery img,.gallery video{
 width:100%;
-border-radius:10px;
-}
-
-/* LIGHTBOX */
-#lightbox{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:black;
-display:none;
-justify-content:center;
-align-items:center;
-z-index:999;
-}
-
-#viewer{
-max-width:90%;
-max-height:90%;
+border-radius:12px;
+cursor:pointer;
 }
 
 /* HEARTS */
 .heart{
 position:fixed;
+bottom:-20px;
 color:white;
 animation:floatUp linear infinite;
 }
 
 @keyframes floatUp{
-from{transform:translateY(100vh)}
-to{transform:translateY(-10vh)}
+from{transform:translateY(0)}
+to{transform:translateY(-120vh)}
 }
+
 </style>
 </head>
 
@@ -108,36 +95,35 @@ to{transform:translateY(-10vh)}
 
 <div id="login">
 <h1>Klara & Bruno 💍</h1>
+<p>Dobrodošli na naš dan 💛</p>
 <input type="password" id="pass" placeholder="Lozinka">
 <button onclick="enter()">Uđi</button>
 </div>
 
 <div class="hero">
 <h1>Klara & Bruno</h1>
-<p>Hvala što ste dio našeg dana 💛</p>
+<p>Hvala što ste dio našeg najljepšeg dana 💛</p>
 </div>
 
-<div style="text-align:center;">
+<div>
 <input type="text" id="username" placeholder="Vaše ime">
-<button onclick="upload()">📸 Dodaj</button>
-<button onclick="downloadZip()">📦 ZIP</button>
+<br>
+<button onclick="upload()">📸 Dodaj slike/video</button>
+<button onclick="downloadAll()">📦 Preuzmi sve</button>
 </div>
 
 <input type="file" id="file" multiple accept="image/*,video/*" hidden>
 
 <div class="gallery" id="gallery"></div>
 
-<div id="lightbox" onclick="closeLightbox()">
-<div id="viewer"></div>
-</div>
-
 <audio id="music" loop>
 <source src="paulyudin-wedding-485932.mp3">
 </audio>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -158,95 +144,86 @@ if(pass.value==="svadba2026"){
 login.style.display="none";
 music.play();
 loadGallery();
+startHearts();
 }
 }
 
-/* UPLOAD MULTI */
+/* UPLOAD */
 function upload(){
 file.click();
 }
 
 file.addEventListener("change", async e=>{
-let files=[...e.target.files];
-let name=username.value||"Gost";
+let files = [...e.target.files];
+let name = username.value || "Gost";
 
 for(let f of files){
 
-if(f.size > 20*1024*1024){
-alert("Max 20MB!");
+if(f.size > 15*1024*1024){
+alert("Max 15MB po datoteci");
 continue;
 }
 
-let ref=storage.ref("wedding/"+Date.now()+"_"+f.name);
+let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
 await ref.put(f);
-let url=await ref.getDownloadURL();
+let url = await ref.getDownloadURL();
 
 await db.collection("photos").add({
-url,name,type:f.type,created:Date.now()
+url:url,
+name:name,
+type:f.type,
+created:Date.now()
 });
 }
 });
 
-/* LOAD OPTIMIZED */
+/* LOAD */
 function loadGallery(){
 db.collection("photos")
 .orderBy("created","desc")
-.limit(200)
 .onSnapshot(snap=>{
 gallery.innerHTML="";
+
 snap.forEach(doc=>{
 let d=doc.data();
 
-let el = d.type.startsWith("video")
-? document.createElement("video")
-: document.createElement("img");
+let el;
 
+if(d.type.startsWith("video")){
+el=document.createElement("video");
 el.src=d.url;
-el.loading="lazy";
-el.onclick=()=>openViewer(d.url,d.type);
-
-gallery.appendChild(el);
-});
-});
-}
-
-/* LIGHTBOX + SWIPE */
-let startX=0;
-
-function openViewer(url,type){
-viewer.innerHTML="";
-let el = type.startsWith("video")
-? document.createElement("video")
-: document.createElement("img");
-
-el.src=url;
 el.controls=true;
-viewer.appendChild(el);
-
-lightbox.style.display="flex";
+}else{
+el=document.createElement("img");
+el.src=d.url;
 }
 
-lightbox.addEventListener("touchstart",e=>{
-startX=e.touches[0].clientX;
+el.loading="lazy";
+
+let down=document.createElement("a");
+down.href=d.url;
+down.download="file";
+down.innerText="⬇️";
+
+let wrap=document.createElement("div");
+wrap.appendChild(el);
+wrap.appendChild(down);
+
+gallery.appendChild(wrap);
 });
-
-lightbox.addEventListener("touchend",e=>{
-let endX=e.changedTouches[0].clientX;
-
-if(endX-startX>50) console.log("prev");
-if(startX-endX>50) console.log("next");
 });
-
-function closeLightbox(){
-lightbox.style.display="none";
 }
 
-/* ZIP CALL */
-function downloadZip(){
-window.open("https://YOUR_FUNCTION_URL/downloadZip");
+/* DOWNLOAD ALL */
+async function downloadAll(){
+let snap = await db.collection("photos").get();
+snap.forEach(doc=>{
+window.open(doc.data().url);
+});
 }
 
 /* HEARTS */
+function startHearts(){
 setInterval(()=>{
 let h=document.createElement("div");
 h.className="heart";
@@ -254,9 +231,9 @@ h.innerText="❤";
 h.style.left=Math.random()*100+"vw";
 h.style.animationDuration=(5+Math.random()*5)+"s";
 document.body.appendChild(h);
-
 setTimeout(()=>h.remove(),8000);
 },500);
+}
 
 </script>
 
