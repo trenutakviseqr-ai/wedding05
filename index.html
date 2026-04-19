@@ -5,120 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Klara & Bruno 💍</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=Poppins&display=swap" rel="stylesheet">
-
 <style>
 body{
-  margin:0;
-  font-family:Poppins;
-  background:linear-gradient(#fffaf5,#f3e5d8);
+  font-family:sans-serif;
   text-align:center;
+  background:#fffaf5;
 }
 
-/* LOGIN */
-#login{
-  position:fixed;
-  width:100%; height:100%;
-  background:url("hero.jpg") center/cover;
-  display:flex; flex-direction:column;
-  justify-content:center; align-items:center;
-  color:white; z-index:999;
-}
-
-/* GALLERY */
 .gallery{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
   gap:10px;
-  padding:15px;
+  padding:10px;
 }
+
 .gallery img,.gallery video{
   width:100%;
-  border-radius:12px;
+  border-radius:10px;
   cursor:pointer;
-  transition:.3s;
 }
-.gallery img:hover{ transform:scale(1.05); }
 
-/* VIEWER */
 #viewer{
   position:fixed;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.95);
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.9);
   display:none;
   justify-content:center;
   align-items:center;
-  flex-direction:column;
-  z-index:1000;
 }
+
 #viewer img,#viewer video{
   max-width:90%;
-  max-height:80%;
-  border-radius:10px;
-  animation:zoom .3s;
-}
-
-@keyframes zoom{
-  from{transform:scale(.8)} to{transform:scale(1)}
-}
-
-/* BUTTON */
-button{
-  padding:12px 25px;
-  border:none;
-  border-radius:30px;
-  background:linear-gradient(45deg,#c6a46c,#e8c88a);
-  color:white;
-  margin:10px;
-}
-
-input{
-  padding:12px;
-  border-radius:25px;
-  border:none;
-  margin:10px;
-}
-
-/* HEARTS */
-.heart{
-  position:fixed;
-  bottom:-20px;
-  color:white;
-  animation:floatUp linear infinite;
-}
-@keyframes floatUp{
-  from{transform:translateY(0)}
-  to{transform:translateY(-120vh)}
+  max-height:90%;
 }
 </style>
 </head>
 
 <body>
 
-<div id="login">
-  <h1>Klara & Bruno 💍</h1>
-  <input type="password" id="pass" placeholder="Lozinka">
-  <button onclick="enter()">Uđi</button>
-</div>
-
 <h2>Klara & Bruno 💛</h2>
 
 <input type="text" id="username" placeholder="Vaše ime"><br>
-<button onclick="upload()">📸 Upload</button>
-<button onclick="downloadAll()">📦 Preuzmi sve</button>
+<button onclick="upload()">Upload</button>
+<button onclick="downloadAll()">Preuzmi sve</button>
 
-<input type="file" id="file" multiple accept="image/*,video/*" hidden>
+<input type="file" id="file" multiple hidden>
 
 <div id="gallery" class="gallery"></div>
 
-<div id="viewer" onclick="closeViewer()">
+<div id="viewer" onclick="this.style.display='none'">
   <img id="viewerImg">
   <video id="viewerVideo" controls></video>
 </div>
-
-<audio id="music" loop>
-  <source src="paulyudin-wedding-485932.mp3">
-</audio>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -138,80 +77,30 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-let allMedia = [];
-let currentIndex = 0;
-
-/* LOGIN */
-function enter(){
-  if(pass.value==="svadba2026"){
-    login.style.display="none";
-    music.play().catch(()=>{});
-    loadGallery();
-    startHearts();
-  }
-}
-
-/* LOAD (FIXED + DEBUG) */
+/* LOAD */
 function loadGallery(){
-  console.log("Loading gallery...");
-
-  db.collection("photos").onSnapshot(snap=>{
-    console.log("Docs:", snap.size);
-
+  db.collection("photos").onSnapshot(snapshot=>{
     gallery.innerHTML="";
-    allMedia=[];
+    snapshot.forEach(doc=>{
+      let d = doc.data();
 
-    snap.forEach((doc,i)=>{
-      let d=doc.data();
-      allMedia.push(d);
+      let el;
+      if(d.type && d.type.startsWith("video")){
+        el=document.createElement("video");
+        el.src=d.url;
+      }else{
+        el=document.createElement("img");
+        el.src=d.url;
+      }
 
-      let el = d.type && d.type.startsWith("video")
-        ? document.createElement("video")
-        : document.createElement("img");
-
-      el.src=d.url;
-
-      el.onclick = e=>{
-        e.stopPropagation();
-        openViewer(i);
-      };
-
+      el.onclick=()=>openViewer(d);
       gallery.appendChild(el);
     });
-  }, err=>{
-    console.error("Firestore error:", err);
-    alert("Greška pri dohvaćanju slika!");
   });
 }
 
-/* UPLOAD */
-function upload(){ file.click(); }
-
-file.addEventListener("change", async e=>{
-  let name = username.value || "Gost";
-
-  for(let f of e.target.files){
-    try{
-      let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
-      await ref.put(f);
-      let url = await ref.getDownloadURL();
-
-      await db.collection("photos").add({
-        url, name, type:f.type, created:Date.now()
-      });
-
-    }catch(err){
-      console.error("Upload error:", err);
-      alert("Upload nije uspio!");
-    }
-  }
-});
-
 /* VIEWER */
-function openViewer(i){
-  currentIndex=i;
-  let d=allMedia[i];
-
+function openViewer(d){
   viewer.style.display="flex";
 
   if(d.type && d.type.startsWith("video")){
@@ -225,28 +114,27 @@ function openViewer(i){
   }
 }
 
-function closeViewer(){
-  viewer.style.display="none";
-  viewerVideo.pause();
+/* UPLOAD */
+function upload(){
+  file.click();
 }
 
-/* SWIPE */
-let startX=0;
-viewer.addEventListener("touchstart",e=> startX=e.touches[0].clientX);
-viewer.addEventListener("touchend",e=>{
-  let endX=e.changedTouches[0].clientX;
-  if(startX-endX>50) next();
-  if(endX-startX>50) prev();
+file.addEventListener("change", async e=>{
+  let name=username.value || "Gost";
+
+  for(let f of e.target.files){
+    let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
+    await ref.put(f);
+    let url = await ref.getDownloadURL();
+
+    await db.collection("photos").add({
+      url:url,
+      name:name,
+      type:f.type,
+      created:Date.now()
+    });
+  }
 });
-
-function next(){
-  currentIndex=(currentIndex+1)%allMedia.length;
-  openViewer(currentIndex);
-}
-function prev(){
-  currentIndex=(currentIndex-1+allMedia.length)%allMedia.length;
-  openViewer(currentIndex);
-}
 
 /* DOWNLOAD */
 async function downloadAll(){
@@ -256,18 +144,8 @@ async function downloadAll(){
   });
 }
 
-/* HEARTS */
-function startHearts(){
-  setInterval(()=>{
-    let h=document.createElement("div");
-    h.className="heart";
-    h.innerText="❤";
-    h.style.left=Math.random()*100+"vw";
-    h.style.animationDuration=(5+Math.random()*5)+"s";
-    document.body.appendChild(h);
-    setTimeout(()=>h.remove(),8000);
-  },500);
-}
+/* INIT */
+loadGallery();
 </script>
 
 </body>
