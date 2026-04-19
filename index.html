@@ -4,59 +4,145 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Klara & Bruno 💍</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
 body{
-  font-family:sans-serif;
-  text-align:center;
-  background:#fffaf5;
+  margin:0;
+  font-family:Poppins;
+  background:#fafafa;
 }
 
-.gallery{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+/* HEADER */
+.header{
+  position:sticky;
+  top:0;
+  background:white;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  z-index:10;
+}
+
+.logo{
+  font-weight:600;
+}
+
+/* UPLOAD BAR */
+.upload-bar{
+  display:flex;
   gap:10px;
   padding:10px;
+  background:white;
 }
 
-.gallery img,.gallery video{
+input{
+  flex:1;
+  padding:10px;
+  border-radius:20px;
+  border:1px solid #ddd;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:20px;
+  background:black;
+  color:white;
+}
+
+/* FEED */
+.feed{
+  max-width:500px;
+  margin:auto;
+}
+
+.post{
+  background:white;
+  margin:15px 0;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+
+.post-header{
+  padding:10px;
+  font-weight:600;
+}
+
+.post img, .post video{
   width:100%;
-  border-radius:10px;
+}
+
+.actions{
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
+}
+
+/* LIGHTBOX */
+#lightbox{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  justify-content:center;
+  align-items:center;
+  z-index:100;
+}
+
+#lightbox img{
+  max-width:90%;
+  max-height:90%;
+}
+
+.nav{
+  position:absolute;
+  top:50%;
+  font-size:40px;
+  color:white;
   cursor:pointer;
 }
 
-#viewer{
-  position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:rgba(0,0,0,0.9);
-  display:none;
-  justify-content:center;
-  align-items:center;
-}
-
-#viewer img,#viewer video{
-  max-width:90%;
-  max-height:90%;
+.left{ left:20px; }
+.right{ right:20px; }
+.close{
+  position:absolute;
+  top:20px;
+  right:20px;
+  font-size:30px;
+  color:white;
+  cursor:pointer;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Klara & Bruno 💛</h2>
+<div class="header">
+  <div class="logo">Klara & Bruno 💍</div>
+</div>
 
-<input type="text" id="username" placeholder="Vaše ime"><br>
-<button onclick="upload()">Upload</button>
-<button onclick="downloadAll()">Preuzmi sve</button>
+<div class="upload-bar">
+  <input type="text" id="username" placeholder="Vaše ime">
+  <button onclick="upload()">+</button>
+</div>
 
-<input type="file" id="file" multiple hidden>
+<input type="file" id="file" multiple accept="image/*,video/*" hidden>
 
-<div id="gallery" class="gallery"></div>
+<div class="feed" id="feed"></div>
 
-<div id="viewer" onclick="this.style.display='none'">
-  <img id="viewerImg">
-  <video id="viewerVideo" controls></video>
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <span class="close" onclick="closeLightbox()">✖</span>
+  <span class="nav left" onclick="prevImage()">⬅</span>
+  <img id="lightbox-img">
+  <span class="nav right" onclick="nextImage()">➡</span>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -68,8 +154,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
   authDomain: "trenutakviseqr-9d521.firebaseapp.com",
   projectId: "trenutakviseqr-9d521",
-  storageBucket: "trenutakviseqr-9d521.firebasestorage.app",
-  messagingSenderId: "578545655511",
+  storageBucket: "trenutakviseqr-9d521.appspot.com",
   appId: "1:578545655511:web:4ee1996961004f783eda92"
 };
 
@@ -77,75 +162,96 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-/* LOAD */
-function loadGallery(){
-  db.collection("photos").onSnapshot(snapshot=>{
-    gallery.innerHTML="";
-    snapshot.forEach(doc=>{
-      let d = doc.data();
+let gallery = [];
+let current = 0;
 
-      let el;
-      if(d.type && d.type.startsWith("video")){
-        el=document.createElement("video");
-        el.src=d.url;
-      }else{
-        el=document.createElement("img");
-        el.src=d.url;
-      }
-
-      el.onclick=()=>openViewer(d);
-      gallery.appendChild(el);
-    });
-  });
-}
-
-/* VIEWER */
-function openViewer(d){
-  viewer.style.display="flex";
-
-  if(d.type && d.type.startsWith("video")){
-    viewerVideo.style.display="block";
-    viewerImg.style.display="none";
-    viewerVideo.src=d.url;
-  }else{
-    viewerImg.style.display="block";
-    viewerVideo.style.display="none";
-    viewerImg.src=d.url;
-  }
-}
-
-/* UPLOAD */
-function upload(){
-  file.click();
-}
+function upload(){ file.click(); }
 
 file.addEventListener("change", async e=>{
-  let name=username.value || "Gost";
+  let files = [...e.target.files];
+  let name = username.value || "Gost";
 
-  for(let f of e.target.files){
+  for(let f of files){
     let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
     await ref.put(f);
     let url = await ref.getDownloadURL();
 
     await db.collection("photos").add({
-      url:url,
-      name:name,
-      type:f.type,
-      created:Date.now()
+      url, name, type:f.type, created:Date.now()
     });
   }
 });
 
-/* DOWNLOAD */
-async function downloadAll(){
-  let snap = await db.collection("photos").get();
-  snap.forEach(doc=>{
-    window.open(doc.data().url);
-  });
+function load(){
+  db.collection("photos")
+    .orderBy("created","desc")
+    .onSnapshot(snap=>{
+
+      feed.innerHTML="";
+      gallery = [];
+
+      snap.forEach(doc=>{
+        let d = doc.data();
+        let index = gallery.length;
+        gallery.push(d);
+
+        let post = document.createElement("div");
+        post.className = "post";
+
+        let header = document.createElement("div");
+        header.className = "post-header";
+        header.innerText = d.name;
+
+        let media;
+        if(d.type.startsWith("video")){
+          media = document.createElement("video");
+          media.src = d.url;
+          media.controls = true;
+        } else {
+          media = document.createElement("img");
+          media.src = d.url;
+          media.onclick = ()=>openLightbox(index);
+        }
+
+        let actions = document.createElement("div");
+        actions.className = "actions";
+        actions.innerHTML = "❤ ⬇";
+
+        post.appendChild(header);
+        post.appendChild(media);
+        post.appendChild(actions);
+
+        feed.appendChild(post);
+      });
+
+    });
 }
 
-/* INIT */
-loadGallery();
+function openLightbox(i){
+  current = i;
+  document.getElementById("lightbox").style.display="flex";
+  show();
+}
+
+function closeLightbox(){
+  document.getElementById("lightbox").style.display="none";
+}
+
+function show(){
+  document.getElementById("lightbox-img").src = gallery[current].url;
+}
+
+function nextImage(){
+  current = (current+1)%gallery.length;
+  show();
+}
+
+function prevImage(){
+  current = (current-1+gallery.length)%gallery.length;
+  show();
+}
+
+load();
 </script>
 
 </body>
