@@ -71,6 +71,7 @@ button{
   background:rgba(0,0,0,0.9);
   justify-content:center;
   align-items:center;
+  z-index:999;
 }
 
 #lightbox img{
@@ -111,7 +112,9 @@ button{
 </audio>
 
 <script>
-const supabase = window.supabase.createClient(
+
+/* SUPABASE INIT */
+const client = window.supabase.createClient(
   "https://pfjqfnqpqljlsytjnsrw.supabase.co",
   "sb_publishable_sDCNISDGhcLJPBamCpJ5BA_fkpcVRtZ"
 );
@@ -145,20 +148,17 @@ document.getElementById("file").addEventListener("change", async function(e){
 
     let filename = Date.now() + "_" + file.name;
 
-    // upload u storage
-    await supabase.storage
+    await client.storage
       .from("photos")
       .upload(filename, file);
 
-    // uzmi URL
-    let { data } = supabase.storage
+    let { data } = client.storage
       .from("photos")
       .getPublicUrl(filename);
 
-    // spremi u bazu
-    await supabase.from("photos").insert({
+    await client.from("photos").insert({
       url: data.publicUrl,
-      created_at: new Date()
+      created_at: new Date().toISOString()
     });
   }
 
@@ -168,13 +168,16 @@ document.getElementById("file").addEventListener("change", async function(e){
 /* LOAD */
 async function loadGallery(){
 
-  const { data } = await supabase
+  const { data } = await client
     .from("photos")
     .select("*")
     .order("created_at", { ascending:false });
 
+  const gallery = document.getElementById("gallery");
   gallery.innerHTML="";
   images=[];
+
+  if(!data) return;
 
   data.forEach(d => {
 
@@ -207,7 +210,7 @@ function closeLightbox(){
 /* DOWNLOAD */
 async function downloadAll(){
 
-  const { data } = await supabase
+  const { data } = await client
     .from("photos")
     .select("url");
 
