@@ -7,6 +7,8 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <style>
 body{
   margin:0;
@@ -15,7 +17,6 @@ body{
   text-align:center;
 }
 
-/* LOGIN */
 #login{
   position:fixed;
   top:0; left:0;
@@ -29,7 +30,6 @@ body{
   z-index:999;
 }
 
-/* HERO */
 .hero{
   background:url("hero1.jpg") center/cover;
   height:40vh;
@@ -40,7 +40,6 @@ body{
   color:white;
 }
 
-/* BUTTON */
 button{
   padding:12px 20px;
   border:none;
@@ -48,9 +47,9 @@ button{
   background:linear-gradient(45deg,#c6a46c,#e8c88a);
   color:white;
   margin:10px;
+  cursor:pointer;
 }
 
-/* GALLERY */
 .gallery{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
@@ -64,7 +63,6 @@ button{
   cursor:pointer;
 }
 
-/* LIGHTBOX */
 #lightbox{
   display:none;
   position:fixed;
@@ -84,7 +82,6 @@ button{
 
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h1>Klara & Bruno 💍</h1>
   <input type="password" id="pass" placeholder="Lozinka">
@@ -98,7 +95,7 @@ button{
 
 <input type="text" id="username" placeholder="Vaše ime">
 <br>
-<button onclick="upload()">📸 Dodaj slike (max 10)</button>
+<button onclick="upload()">📸 Dodaj slike</button>
 <button onclick="downloadAll()">📦 Preuzmi sve</button>
 
 <input type="file" id="file" multiple accept="image/*" hidden>
@@ -113,22 +110,11 @@ button{
   <source src="paulyudin-wedding-485932.mp3">
 </audio>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
-  authDomain: "trenutakviseqr-9d521.firebaseapp.com",
-  projectId: "trenutakviseqr-9d521",
-  storageBucket: "trenutakviseqr-9d521.appspot.com",
-  appId: "1:578545655511:web:4ee1996961004f783eda92"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const storage = firebase.storage();
+const supabase = window.supabase.createClient(
+  "https://pfjqfnqpqljlsytjnsrw.supabase.co",
+  "sb_publishable_sDCNISDGhcLJPBamCpJ5BA_fkpcVRtZ"
+);
 
 let images = [];
 let current = 0;
@@ -155,61 +141,57 @@ document.getElementById("file").addEventListener("change", async function(e){
 
   let files = Array.from(e.target.files).slice(0,10);
 
-  if(files.length === 0) return;
-
   for(let file of files){
 
-    try{
-      console.log("Uploading:", file.name);
+    let filename = Date.now() + "_" + file.name;
 
-      const storageRef = storage.ref().child("wedding/" + Date.now() + "_" + file.name);
+    // upload u storage
+    await supabase.storage
+      .from("photos")
+      .upload(filename, file);
 
-      const snapshot = await storageRef.put(file);
+    // uzmi URL
+    let { data } = supabase.storage
+      .from("photos")
+      .getPublicUrl(filename);
 
-      const url = await snapshot.ref.getDownloadURL();
-
-      console.log("Uploaded:", url);
-
-      await db.collection("photos").add({
-        url: url,
-        created: Date.now()
-      });
-
-    } catch(err){
-      console.error("ERROR:", err);
-      alert("Upload error - pogledaj console (F12)");
-    }
+    // spremi u bazu
+    await supabase.from("photos").insert({
+      url: data.publicUrl,
+      created_at: new Date()
+    });
   }
 
+  loadGallery();
 });
 
 /* LOAD */
-function loadGallery(){
-  db.collection("photos")
-    .orderBy("created","desc")
-    .limit(200)
-    .onSnapshot(snap=>{
+async function loadGallery(){
 
-      gallery.innerHTML="";
-      images=[];
+  const { data } = await supabase
+    .from("photos")
+    .select("*")
+    .order("created_at", { ascending:false });
 
-      snap.forEach(doc=>{
-        let d = doc.data();
-        images.push(d.url);
+  gallery.innerHTML="";
+  images=[];
 
-        let img=document.createElement("img");
-        img.src=d.url;
-        img.loading="lazy";
+  data.forEach(d => {
 
-        img.onclick=()=>{
-          current = images.indexOf(d.url);
-          openLightbox();
-        };
+    images.push(d.url);
 
-        gallery.appendChild(img);
-      });
+    let img=document.createElement("img");
+    img.src=d.url;
+    img.loading="lazy";
 
-    });
+    img.onclick=()=>{
+      current = images.indexOf(d.url);
+      openLightbox();
+    };
+
+    gallery.appendChild(img);
+
+  });
 }
 
 /* LIGHTBOX */
@@ -224,15 +206,19 @@ function closeLightbox(){
 
 /* DOWNLOAD */
 async function downloadAll(){
-  let snap = await db.collection("photos").limit(100).get();
 
-  snap.forEach(doc=>{
+  const { data } = await supabase
+    .from("photos")
+    .select("url");
+
+  data.forEach(d=>{
     let a = document.createElement("a");
-    a.href = doc.data().url;
+    a.href = d.url;
     a.download = "slika";
     a.click();
   });
 }
+
 </script>
 
 </body>
