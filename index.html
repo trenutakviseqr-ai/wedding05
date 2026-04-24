@@ -83,6 +83,7 @@ button{
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
   <h1>Klara & Bruno 💍</h1>
   <input type="password" id="pass" placeholder="Lozinka">
@@ -96,6 +97,7 @@ button{
 
 <input type="text" id="username" placeholder="Vaše ime">
 <br>
+
 <button onclick="upload()">📸 Dodaj slike</button>
 <button onclick="downloadAll()">📦 Preuzmi sve</button>
 
@@ -113,7 +115,7 @@ button{
 
 <script>
 
-/* SUPABASE INIT */
+/* SUPABASE INIT (SAMO JEDNOM!) */
 const client = window.supabase.createClient(
   "https://pfjqfnqpqljlsytjnsrw.supabase.co",
   "sb_publishable_sDCNISDGhcLJPBamCpJ5BA_fkpcVRtZ"
@@ -140,7 +142,7 @@ function upload(){
   document.getElementById("file").click();
 }
 
-document.getElementById("file").addEventListener("change", async function(e){
+document.getElementById("file").addEventListener("change", async (e)=>{
 
   let files = Array.from(e.target.files).slice(0,10);
 
@@ -193,7 +195,6 @@ async function loadGallery(){
     };
 
     gallery.appendChild(img);
-
   });
 }
 
@@ -213,6 +214,8 @@ async function downloadAll(){
   const { data } = await client
     .from("photos")
     .select("url");
+
+  if(!data) return;
 
   data.forEach(d=>{
     let a = document.createElement("a");
