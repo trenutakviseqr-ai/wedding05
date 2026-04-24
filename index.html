@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Klara & Bruno 💍</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
 body{
@@ -32,7 +32,7 @@ body{
 /* HERO */
 .hero{
   background:url("hero1.jpg") center/cover;
-  height:50vh;
+  height:40vh;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -40,7 +40,7 @@ body{
   color:white;
 }
 
-/* BUTTONS */
+/* BUTTON */
 button{
   padding:12px 20px;
   border:none;
@@ -79,18 +79,12 @@ button{
   max-width:90%;
   max-height:80%;
 }
-
-/* PROGRESS */
-#progress{
-  width:80%;
-  margin:10px auto;
-  display:none;
-}
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
   <h1>Klara & Bruno 💍</h1>
   <input type="password" id="pass" placeholder="Lozinka">
@@ -99,15 +93,13 @@ button{
 
 <div class="hero">
   <h1>Klara & Bruno</h1>
-  <p>Hvala što ste dio našeg dana 💛</p>
+  <p>Podijelite uspomene 💛</p>
 </div>
 
 <input type="text" id="username" placeholder="Vaše ime">
 <br>
-<button onclick="upload()">📸 Dodaj slike</button>
+<button onclick="upload()">📸 Dodaj slike (max 10)</button>
 <button onclick="downloadAll()">📦 Preuzmi sve</button>
-
-<progress id="progress" value="0" max="100"></progress>
 
 <input type="file" id="file" multiple accept="image/*" hidden>
 
@@ -127,7 +119,7 @@ button{
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyCuLdrkcZ2JVSZ78I5b6H8waU-IPMyCjwI",
   authDomain: "trenutakviseqr-9d521.firebaseapp.com",
   projectId: "trenutakviseqr-9d521",
   storageBucket: "trenutakviseqr-9d521.appspot.com",
@@ -143,7 +135,8 @@ let current = 0;
 
 /* LOGIN */
 function enter(){
-  let p = document.getElementById("pass").value;
+  const p = document.getElementById("pass").value;
+
   if(p === "svadba2026"){
     document.getElementById("login").style.display="none";
     document.getElementById("music").play();
@@ -158,39 +151,45 @@ function upload(){
   document.getElementById("file").click();
 }
 
-file.addEventListener("change", async e=>{
-  let files = [...e.target.files].slice(0,10);
-  let progress = document.getElementById("progress");
-  progress.style.display = "block";
+document.getElementById("file").addEventListener("change", async function(e){
 
-  for(let i=0;i<files.length;i++){
-    let f = files[i];
+  let files = Array.from(e.target.files).slice(0,10);
 
-    let ref = storage.ref("wedding/"+Date.now()+"_"+f.name);
-    let task = ref.put(f);
+  if(files.length === 0) return;
 
-    task.on("state_changed", snap=>{
-      let percent = (snap.bytesTransferred / snap.totalBytes)*100;
-      progress.value = percent;
-    });
+  for(let file of files){
 
-    await task;
-    let url = await ref.getDownloadURL();
+    try{
+      console.log("Uploading:", file.name);
 
-    await db.collection("photos").add({
-      url, created: Date.now()
-    });
+      const storageRef = storage.ref().child("wedding/" + Date.now() + "_" + file.name);
+
+      const snapshot = await storageRef.put(file);
+
+      const url = await snapshot.ref.getDownloadURL();
+
+      console.log("Uploaded:", url);
+
+      await db.collection("photos").add({
+        url: url,
+        created: Date.now()
+      });
+
+    } catch(err){
+      console.error("ERROR:", err);
+      alert("Upload error - pogledaj console (F12)");
+    }
   }
 
-  progress.style.display = "none";
 });
 
-/* LOAD (OPTIMIZED) */
+/* LOAD */
 function loadGallery(){
   db.collection("photos")
     .orderBy("created","desc")
     .limit(200)
     .onSnapshot(snap=>{
+
       gallery.innerHTML="";
       images=[];
 
@@ -209,6 +208,7 @@ function loadGallery(){
 
         gallery.appendChild(img);
       });
+
     });
 }
 
@@ -222,11 +222,15 @@ function closeLightbox(){
   document.getElementById("lightbox").style.display="none";
 }
 
-/* DOWNLOAD ALL */
+/* DOWNLOAD */
 async function downloadAll(){
   let snap = await db.collection("photos").limit(100).get();
+
   snap.forEach(doc=>{
-    window.open(doc.data().url);
+    let a = document.createElement("a");
+    a.href = doc.data().url;
+    a.download = "slika";
+    a.click();
   });
 }
 </script>
